@@ -1,16 +1,21 @@
 #include <ESP8266WiFi.h>
+#include <ArduinoJson.h>
 
 //////////////////////
 // Config:          //
-bool nodemcuAsAP = true;
+bool nodemcuAsAP = false;
 const char WIFI_AP_NAME[] = "buggy";
 const char WIFI_AP_PASS[] = "password";
 
 //to connect to already existing wifi
-const char WIFI_NAME[] = "name";
-const char WIFI_PASS[] = "password";
+const char WIFI_NAME[] = "PortalGun";
+const char WIFI_PASS[] = "2017komacar";
 
 bool DEBUG = false; //this doesn't work when nodemcuAsAP is set to true?
+
+String tagForward = "sensorForward";
+String tagLeft = "sensorLeft";
+String tagRight = "sensorRight";
 //////////////////////
 
 struct SENSOR{
@@ -60,29 +65,26 @@ void loop()
       Serial.println("turning on debug");
       DEBUG = true;
     }
-    
-    if(received.indexOf("f=") == 0){
-      if(DEBUG) Serial.println("front");
-      sensor.forward=received;
-      sensor.timestamp_forward = millis();    
-    }else{
-      //sensor.forward="-1";
-    }
 
-    if(received.indexOf("l=") == 0){
-      if(DEBUG) Serial.println("left");
-      sensor.left=received;
-      sensor.timestamp_left = millis();
-    }else{
-      //sensor.left="-1";
+    int index = received.indexOf(tagForward + "=");
+    if(index == 0){
+      if(DEBUG) Serial.println("front");
+      sensor.forward = received.substring(tagForward.length() + 1);
+      sensor.timestamp_forward = millis();    
     }
     
-    if(received.indexOf("r=") == 0){
+    index = received.indexOf(tagLeft + "=");
+    if(index == 0){
+      if(DEBUG) Serial.println("left");
+      sensor.left = received.substring(tagLeft.length() + 1);
+      sensor.timestamp_left = millis();
+    }
+    
+    index = received.indexOf(tagRight + "=");
+    if(index == 0){
       if(DEBUG) Serial.println("right");
-      sensor.right=received;
+      sensor.right = received.substring(tagRight.length() + 1);
       sensor.timestamp_right = millis();
-    }else{
-      //sensor.right="-1";
     }
   }
 
@@ -118,17 +120,17 @@ void loop()
   }
   //read frontal sensor
   else if (req.indexOf("/read/f") != -1){
-    sendToBuggy("sensorForward");
+    sendToBuggy(tagForward);
     respond("ok");
   }
   //read sensor on the left
   else if (req.indexOf("/read/l") != -1){
-    sendToBuggy("sensorLeft");
+    sendToBuggy(tagLeft);
     respond("ok");
   }
   //read sensor on the right
   else if (req.indexOf("/read/r") != -1){
-    sendToBuggy("sensorRight");
+    sendToBuggy(tagRight);
     respond("ok");
   }else{
     String s = "Invalid request. Try:<br>/get<br>/go/f /go/l /go/r /go/s<br>/read/f /read/l /read/f";
@@ -193,10 +195,25 @@ void respond(String html){
 
 void respondSensorValues(){
   String sensorsHTML = "";
+  
+  StaticJsonBuffer<400> jsonBuffer;
+  JsonObject& root = jsonBuffer.createObject();
+
+  root[tagLeft] = sensor.left;
+  root[tagLeft + "Timestamp"] = String((millis() - sensor.timestamp_left) / 1000);
+  
+  root[tagForward] = sensor.forward;
+  root[tagForward + "Timestamp"] = String((millis() - sensor.timestamp_forward) / 1000);
+  
+  root[tagRight] = sensor.right;
+  root[tagRight + "Timestamp"] = String((millis() - sensor.timestamp_right) / 1000);
+
+  root.printTo(sensorsHTML);
+  /*
   sensorsHTML += sensor.forward + " (" + String((millis() - sensor.timestamp_forward) / 1000) + "s)";
   sensorsHTML += "<br>" + sensor.left + " (" + String((millis() - sensor.timestamp_left) / 1000) + "s)";
   sensorsHTML += "<br>" + sensor.right + " (" + String((millis() - sensor.timestamp_right) / 1000) + "s)"; 
-
+  */
   respond(sensorsHTML);
 }
 
