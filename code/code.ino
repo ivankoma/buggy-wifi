@@ -10,7 +10,7 @@ const char WIFI_AP_PASS[] = "password";
 const char WIFI_NAME[] = "name";
 const char WIFI_PASS[] = "password";
 
-const bool DEBUG = false;
+bool DEBUG = false; //this doesn't work when nodemcuAsAP is set to true?
 //////////////////////
 
 struct SENSOR{
@@ -29,7 +29,7 @@ WiFiClient client;
 
 void setup() 
 {
-  Serial.begin(9600);
+  Serial.begin(115200);
     
   if(nodemcuAsAP){
     setupWiFiAP();
@@ -52,7 +52,15 @@ void loop()
   }  
   if (received != "") {
     if(DEBUG) Serial.println("received=" + received);
-
+    if(received == "DEBUG=false\r\n"){
+      Serial.println("turning off debug");
+      DEBUG = false;
+    }else 
+    if(received == "DEBUG=true\r\n"){
+      Serial.println("turning on debug");
+      DEBUG = true;
+    }
+    
     if(received.indexOf("f=") == 0){
       if(DEBUG) Serial.println("front");
       sensor.forward=received;
@@ -77,7 +85,7 @@ void loop()
       //sensor.right="-1";
     }
   }
-  
+
   // Check if a client has connected (if somebody is sending http request to load a page)
   client = server.available();
   if (!client) {
@@ -86,57 +94,56 @@ void loop()
 
   // Read the first line of the request
   String req = client.readStringUntil('\r');
-  //Serial.println(req);
+  if(DEBUG) Serial.println(req);
   client.flush();
 
   if (req.indexOf("/get") != -1){
     respondSensorValues();
   }
   else if (req.indexOf("/go/l") != -1){
-    Serial.print("l|");
+    sendToBuggy("l");
     respond("ok");
   }
   else if (req.indexOf("/go/r") != -1){
-    Serial.print("r|");
+    sendToBuggy("r");
     respond("ok");
   }
   else if (req.indexOf("/go/f") != -1){
-    Serial.print("f|");
+    sendToBuggy("f");
     respond("ok");
   }
   else if (req.indexOf("/go/s") != -1){
-    Serial.print("s|");
+    sendToBuggy("s");
     respond("ok");
   }
   //read frontal sensor
   else if (req.indexOf("/read/f") != -1){
-    Serial.print("rf|");
+    sendToBuggy("sensorForward");
     respond("ok");
   }
   //read sensor on the left
   else if (req.indexOf("/read/l") != -1){
-    Serial.print("rl|");
+    sendToBuggy("sensorLeft");
     respond("ok");
   }
   //read sensor on the right
   else if (req.indexOf("/read/r") != -1){
-    Serial.print("rl|");
+    sendToBuggy("sensorRight");
     respond("ok");
   }else{
     String s = "Invalid request. Try:<br>/get<br>/go/f /go/l /go/r /go/s<br>/read/f /read/l /read/f";
     respond(s);
   }
- 
+  
   //if there are no clients connected to buggy's AP stop buggy (when buggy goes out of wifi range)
   //this only works when nodemcu is AP
-  
   if(nodemcuAsAP && WiFi.softAPgetStationNum()==0){ 
-    Serial.print("s|");
+    Serial.print("s");
     delay(500); 
   }
 
   client.flush();
-  if(DEBUG) Serial.println("Client disonnected");
+  if(DEBUG) Serial.println("Client disconnected");
 }
 
 //connect to already existing IP address
@@ -191,4 +198,8 @@ void respondSensorValues(){
   sensorsHTML += "<br>" + sensor.right + " (" + String((millis() - sensor.timestamp_right) / 1000) + "s)"; 
 
   respond(sensorsHTML);
+}
+
+void sendToBuggy(String command){
+  Serial.print(command + "|");
 }
