@@ -8,8 +8,8 @@ const char WIFI_AP_NAME[] = "buggy";
 const char WIFI_AP_PASS[] = "password";
 
 //to connect to already existing wifi
-const char WIFI_NAME[] = "PortalGun";
-const char WIFI_PASS[] = "2017komacar";
+const char WIFI_NAME[] = "name";
+const char WIFI_PASS[] = "password";
 
 bool DEBUG = false; //this doesn't work when nodemcuAsAP is set to true?
 
@@ -87,13 +87,11 @@ void loop()
       sensor.timestamp_right = millis();
     }
   }
-
   // Check if a client has connected (if somebody is sending http request to load a page)
   client = server.available();
   if (!client) {
     return;
   }
-
   // Read the first line of the request
   String req = client.readStringUntil('\r');
   if(DEBUG) Serial.println(req);
@@ -103,15 +101,24 @@ void loop()
     respondSensorValues();
   }
   else if (req.indexOf("/go/l") != -1){
-    sendToBuggy("l");
+    String value = req.substring(req.indexOf("l") + 1,req.indexOf("HTTP") - 1);
+    sendToBuggy("l," + value);
+    delay(500);//temp fix
+    sendToBuggy("s");
     respond("ok");
   }
   else if (req.indexOf("/go/r") != -1){
-    sendToBuggy("r");
+    String value = req.substring(req.indexOf("r") + 1,req.indexOf("HTTP") - 1);
+    sendToBuggy("r," + value);
+    delay(500);//temp fix
+    sendToBuggy("s");
     respond("ok");
   }
   else if (req.indexOf("/go/f") != -1){
+    String value = req.substring(req.indexOf("f") + 1,req.indexOf("HTTP") - 1);
     sendToBuggy("f");
+    delay(value.toInt());
+    sendToBuggy("s");
     respond("ok");
   }
   else if (req.indexOf("/go/s") != -1){
@@ -132,7 +139,8 @@ void loop()
   else if (req.indexOf("/read/r") != -1){
     sendToBuggy(tagRight);
     respond("ok");
-  }else{
+  }
+  else{
     String s = "Invalid request. Try:<br>/get<br>/go/f /go/l /go/r /go/s<br>/read/f /read/l /read/f";
     respond(s);
   }
