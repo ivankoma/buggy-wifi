@@ -8,8 +8,8 @@ const char WIFI_AP_NAME[] = "buggy";
 const char WIFI_AP_PASS[] = "password";
 
 //to connect to already existing wifi
-const char WIFI_NAME[] = "name";
-const char WIFI_PASS[] = "password";
+const char WIFI_NAME[] = "PortalGun";
+const char WIFI_PASS[] = "2017komacar";
 
 bool DEBUG = false; //this doesn't work when nodemcuAsAP is set to true?
 
@@ -101,29 +101,45 @@ void loop()
     respondSensorValues();
   }
   else if (req.indexOf("/go/l") != -1){
-    String value = req.substring(req.indexOf("l") + 1,req.indexOf("HTTP") - 1);
-    sendToBuggy("l," + value);
-    delay(500);//temp fix
-    sendToBuggy("s");
+    String buggyTimeOut = req.substring(req.indexOf("l") + 1, req.indexOf(","));
+    String buggySpeed = req.substring(req.lastIndexOf(",") + 1, req.indexOf("HTTP") - 1);
+    sendToBuggy("l," + buggyTimeOut + "," + buggySpeed);
     respond("ok");
   }
   else if (req.indexOf("/go/r") != -1){
-    String value = req.substring(req.indexOf("r") + 1,req.indexOf("HTTP") - 1);
-    sendToBuggy("r," + value);
-    delay(500);//temp fix
-    sendToBuggy("s");
-    respond("ok");
+    String buggyTimeOut = req.substring(req.indexOf("r") + 1,req.indexOf(","));
+    String buggySpeed = req.substring(req.lastIndexOf(",") + 1, req.indexOf("HTTP") - 1);
+    if(checkSpeed(buggySpeed)){
+      sendToBuggy("r," + buggyTimeOut + "," + buggySpeed);
+      respond("ok");
+    }else{
+      respond("no");
+    }
+
   }
   else if (req.indexOf("/go/f") != -1){
-    String value = req.substring(req.indexOf("f") + 1,req.indexOf("HTTP") - 1);
-    sendToBuggy("f");
-    delay(value.toInt());
-    sendToBuggy("s");
-    respond("ok");
+    String buggyTimeOut = req.substring(req.indexOf("f") + 1, req.indexOf(","));
+    String buggySpeed = req.substring(req.lastIndexOf(",") + 1, req.indexOf("HTTP") - 1);
+    if(checkSpeed(buggySpeed)){
+      sendToBuggy("f," + buggyTimeOut + "," + buggySpeed);
+      respond("ok");
+    }else{
+      respond("no");
+    }
   }
   else if (req.indexOf("/go/s") != -1){
     sendToBuggy("s");
     respond("ok");
+  }
+    else if (req.indexOf("/go/b") != -1){
+    String buggyTimeOut = req.substring(req.indexOf("b") + 1,req.indexOf(","));
+    String buggySpeed = req.substring(req.lastIndexOf(",") + 1, req.indexOf("HTTP") - 1);
+    if(checkSpeed(buggySpeed)){
+      sendToBuggy("b," + buggyTimeOut + "," + buggySpeed);
+      respond("ok");
+    }else{
+      respond("no");
+    }
   }
   //read frontal sensor
   else if (req.indexOf("/read/f") != -1){
@@ -228,3 +244,13 @@ void respondSensorValues(){
 void sendToBuggy(String command){
   Serial.print(command + "|");
 }
+
+bool checkSpeed(String s){
+  float speed = s.toFloat();
+  if(speed>1.0){
+    return false;
+  }else{
+    return true;
+  }
+}
+
