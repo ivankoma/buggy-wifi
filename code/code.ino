@@ -3,13 +3,13 @@
 
 //////////////////////
 // Config:          //
-bool nodemcuAsAP = false;
+bool nodemcuAsAP = true;
 const char WIFI_AP_NAME[] = "buggy";
 const char WIFI_AP_PASS[] = "password";
 
 //to connect to already existing wifi
-const char WIFI_NAME[] = "PortalGun";
-const char WIFI_PASS[] = "2017komacar";
+const char WIFI_NAME[] = "name";
+const char WIFI_PASS[] = "password";
 
 bool DEBUG = false; //this doesn't work when nodemcuAsAP is set to true?
 
@@ -131,7 +131,8 @@ void loop()
     sendToBuggy("s");
     respond("ok");
   }
-    else if (req.indexOf("/go/b") != -1){
+  //go in reverse
+  else if (req.indexOf("/go/b") != -1){
     String buggyTimeOut = req.substring(req.indexOf("b") + 1,req.indexOf(","));
     String buggySpeed = req.substring(req.lastIndexOf(",") + 1, req.indexOf("HTTP") - 1);
     if(checkSpeed(buggySpeed)){
@@ -233,11 +234,6 @@ void respondSensorValues(){
   root[tagRight + "Timestamp"] = String((millis() - sensor.timestamp_right) / 1000);
 
   root.printTo(sensorsHTML);
-  /*
-  sensorsHTML += sensor.forward + " (" + String((millis() - sensor.timestamp_forward) / 1000) + "s)";
-  sensorsHTML += "<br>" + sensor.left + " (" + String((millis() - sensor.timestamp_left) / 1000) + "s)";
-  sensorsHTML += "<br>" + sensor.right + " (" + String((millis() - sensor.timestamp_right) / 1000) + "s)"; 
-  */
   respond(sensorsHTML);
 }
 
